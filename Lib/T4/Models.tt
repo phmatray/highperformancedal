@@ -1,0 +1,33 @@
+﻿<#@ template language="C#" debug="false" hostSpecific="true" #>
+<#@ include file="EF.Utility.CS.ttinclude" #>
+<#@ output extension=".txt" #>
+<#@ Assembly Name="System" #>
+<#@ Assembly Name="System.Data.Linq" #>
+<#@ import namespace="System.Data.Linq.Mapping" #>
+<#@ import namespace="System.Collections.Generic" #> 
+<#
+    var fileManager = EntityFrameworkTemplateFileManager.Create(this);
+	fileManager.StartHeader();
+
+	var list = new List<string>() { "first", "second", "third" };
+
+    foreach (var s in list)
+    {
+        fileManager.StartNewFile(s + ".cs");
+#>
+using System;
+
+namespace Proto.T4
+{
+	public class <#= s #>
+	{
+	}
+}
+<#
+	}
+    fileManager.Process();
+#>
+README
+
+Auteur : Philippe MATRAY
+Email  : phmatray@gmail.com

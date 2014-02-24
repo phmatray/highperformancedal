@@ -1,0 +1,482 @@
+﻿<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core" #>
+<#@ Assembly Name="System.Windows.Forms" #>
+<#@ Assembly Name="System.Xml" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections" #>
+<#@ import namespace="System.Collections.Generic" #> 
+<#@ import namespace="System.Xml" #>
+<#
+    // variables
+    const bool generateDTO = true;
+    const bool generateDTOParser = true;
+    const bool generateParserFactory = true;
+    const bool generateBLL = true;
+    const bool generateDB = true;
+    const string fileNamespace = "HighPerformanceDAL";
+
+	// Load the XmlDocument.
+    var doc = new XmlDocument();
+    doc.Load(Host.ResolvePath("Sample.xml"));
+#>
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using HighPerformanceDAL.DTO;
+using Lib.Common;
+
+<#
+	/*****************************************************/
+	/************* CREATION DES DTOS *********************/
+	/*****************************************************/
+    if (generateDTO) 
+	{
+#>
+namespace <#=fileNamespace#>.DTO
+{
+<#
+	// Now we generate C# Code from that XML
+	foreach (XmlElement table in doc.SelectNodes("//Table"))
+	{
+	    var dtoName = table.Attributes["name"].Value;
+#>
+    /// <summary>
+    /// Data Transfert Object relatif à <#=dtoName#>
+    /// </summary>
+	public class <#=dtoName#>DTO : DTOBase
+    {
+		#region Properties
+
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName    = Column.Attributes["name"].Value;
+	    var propType    = Column.Attributes["type"].Value;
+	    var propSummary = Column.Attributes["summary"].Value;
+#>
+        /// <summary>
+        /// <#=propSummary#>
+        /// </summary>
+		public <#=propType#> <#=propName#> { get; set; }
+<#
+	}
+#>
+
+		#endregion
+
+		#region Construtor
+
+        /// <summary>
+        /// Constructeur : Celui-ci ne prend aucun paramètre.
+        /// Tous les types sont initialisés à leur valeur null et sont définies dans CommonBase.
+        /// </summary>
+        public <#=dtoName#>DTO()
+        {
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName    = Column.Attributes["name"].Value;
+	    var propType    = Column.Attributes["type"].Value;
+#>
+			<#=propName#> = NullValue<#=GetNullTypeString(propType)#>;
+<#
+	}
+#>
+			IsNew = true;
+		}
+
+		#endregion
+	}
+
+<#
+	}
+#>
+}
+<#
+	}
+#>
+
+
+
+
+
+
+
+
+
+
+<#
+	/*****************************************************/
+	/************* CREATION DES ORDINAUX *****************/
+	/*****************************************************/
+    if (generateDTOParser)
+    {
+#>
+namespace <#=fileNamespace#>.DTO
+{
+<#
+	// Now we generate C# Code from that XML
+	foreach (XmlElement table in doc.SelectNodes("//Table"))
+	{
+	    var dtoName = table.Attributes["name"].Value;
+#>
+    /// <summary>
+    /// Ordinal lié à <#=dtoName#>DTO
+    /// </summary>
+    public class <#=dtoName#>DTOParser : DTOParser
+	{
+		#region Fields
+
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName = Column.Attributes["name"].Value;
+#>
+		private int _ord<#=propName#>;
+<#
+	}
+#>
+
+		#endregion
+
+		#region Methods
+
+        /// <summary>
+        /// Peuple le DTO.
+        /// </summary>
+        /// <param name="reader">Le reader à partir duquel les données de chaque champ doivent être récupérées.</param>
+        /// <returns>L'ancêtre de notre DTO fortement typé.</returns>
+        public override DTOBase PopulateDTO(SqlDataReader reader)
+        {
+            // Nous assumons que le reader a des données et qu'il se trouve déjà sur la ligne
+            // qui contient les données dont nous avons besoin. Nous n'avons pas besoin d'appeler read.
+            // En règle générale, nous vérifions que chaque champ ne soit pas égal à null.
+            // Si un champ est null alors la valeur nulle de ce champ a déjà été affectée dans le constructeur du DTO,
+            // Nous n'avons donc pas besoin de la changer.
+
+			var <#=dtoName.ToLower()#> = new <#=dtoName#>DTO();
+			
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName    = Column.Attributes["name"].Value;
+	    var propType    = Column.Attributes["type"].Value;
+	    var propSummary = Column.Attributes["summary"].Value;
+#>
+			// <#=propName#>
+			if (!reader.IsDBNull(_ord<#=propName#>)) 
+				<#=dtoName.ToLower()#>.<#=propName#> = reader.Get<#=GetDbTypeString(propType)#>(_ord<#=propName#>);
+<#
+	}
+#>
+			// IsNew
+            <#=dtoName.ToLower()#>.IsNew = false;
+
+            return <#=dtoName.ToLower()#>;
+        }
+
+		/// <summary>
+        /// Peuple l'ordinal.
+        /// </summary>
+        /// <param name="reader">Le reader à partir duquel l'ordinal de chaque champ doit être récupéré.</param>
+        public override void PopulateOrdinals(SqlDataReader reader)
+        {			
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName = Column.Attributes["name"].Value;
+#>
+			_ord<#=propName#> = reader.GetOrdinal("<#=propName#>");
+<#
+	}
+#>
+        }
+
+		#endregion
+	}
+
+<#
+	}
+#>
+}
+
+
+<#
+    }
+#>
+
+
+
+
+
+
+
+
+
+
+<#
+	/*****************************************************/
+	/************* PARSER FACTORY ************************/
+	/*****************************************************/
+    if (generateParserFactory)
+    {
+#>
+namespace <#=fileNamespace #>.DTO
+{
+    /// <summary>
+    /// Fabrique de DTOParser
+    /// </summary>
+    internal static class DTOParserFactory
+    {
+		#region Static Methods
+		
+        /// <summary>
+        /// Obtient le parser correspondant au type de DTO.
+        /// </summary>
+        /// <param name="dtoType">Le type du DTO.</param>
+        /// <returns>Un parser fortement typé.</returns>
+        internal static DTOParser GetParser(Type dtoType)
+        {
+            switch (dtoType.Name)
+            {		
+<#
+	// Now we generate C# Code from that XML
+    foreach (XmlElement table in doc.SelectNodes("//Table"))
+    {
+        var dtoName = table.Attributes["name"].Value;
+#>
+				case "<#=dtoName#>DTO":
+				return new <#=dtoName#>DTOParser();
+<#
+    }
+#>
+		    }
+		
+			// Si nous atteignons ce point, cela signifie que nous n'avons pas trouvé
+			// le type correspondant. Nous levons alors une exception. alors 
+			throw new Exception("Type inconnu");
+		}
+
+		#endregion
+	}
+}
+
+<#
+    }
+#>
+
+
+
+
+
+
+
+
+
+
+<#
+	/*****************************************************/
+	/************* CREATION DES BLL **********************/
+	/*****************************************************/
+    if (generateBLL)
+    {
+#>
+namespace <#=fileNamespace#>.BLL
+{
+<#
+	// Now we generate C# Code from that XML
+    foreach (XmlElement table in doc.SelectNodes("//Table"))
+    {
+        var dtoName = table.Attributes["name"].Value;
+#>
+    /// <summary>
+    /// Logique métier pour la classe <#=dtoName#>.
+    /// Contient la logique de validation.
+    /// </summary>
+	public class <#=dtoName#> : BALBase
+	{
+		#region Properties
+		
+        /// <summary>
+        /// Cette propriété existe pour tous les objets de la BAL, et elle est
+        /// du type DTO correspondant. Il s'agit du mécanisme
+        /// que nous utilisons pour mettre en oeuvre un héritage "a un"
+        /// (NDT : aussi appelé composition) au lieu d'un héritage "est un".
+        /// </summary>
+        public <#=dtoName #>DTO Data { get; set; }
+		
+		#endregion
+
+		#region Constructors
+				
+        /// <summary>
+        /// Initialise une nouvelle instance de <#=dtoName#>
+        /// </summary>
+        public <#=dtoName#>() 
+		{ 
+			Data = new <#=dtoName#>DTO(); 
+		}
+
+		/// <summary>
+        /// Initialise une nouvelle instance de <#=dtoName#> à partir d'un DTO existant.
+        /// </summary>
+        /// <param name="dto">Un dto.</param>
+        public <#=dtoName#>(<#=dtoName#>DTO dto) 
+		{ 
+			Data = dto;
+		}
+
+		#endregion
+
+		#region Overrided Methods
+		
+        /// <summary>
+        /// Valide toutes les propriétés de l'objet.
+        /// </summary>
+        /// <returns>
+        /// Une liste contenant les erreurs de validation.
+        /// Si la liste est vide, les propriétés sont valides.
+        /// </returns>
+        public override List<ValidationError> Validate()
+        {
+            // Appelle toutes les fonctions de validation
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName    = Column.Attributes["name"].Value;
+#>
+			Val_<#=propName#>();
+<# 
+	} 
+#>
+			
+            // Si la liste ValidationErrors est vide, alors
+            // nous avons passé la validation avec succès.
+            return ValidationErrors;
+        }
+
+		#endregion
+
+		#region Methods
+
+        // Méthodes de validation :
+        // Il y a seulement 2 exigences sur les méthodes de validation.
+        // - Elles doivent gérer l'ajout d'une erreur de validation à la
+        //   liste ValidationErrors si elles trouvent une erreur.
+        // - Vous devez ajouter manuellement l'appel à toutes les méthodes de
+        //   validation à la fonction Validate().
+        // Lorsque vous créez un objet ValidationError, souvenez-vous
+        // que le premier paramètre est le nom exact du champ
+        // qui a la mauvaise valeur, et le message d'erreur ne doit pas
+        // contenir le nom du champ, mais plutôt le tag <FieldName>,
+        // qui sera remplacé par l'interface utilisateur ou par l'application appelante.
+
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName    = Column.Attributes["name"].Value;
+	    var propType    = Column.Attributes["type"].Value;
+	    var propSummary = Column.Attributes["summary"].Value;
+#>
+        /// <summary>
+        /// Valide la propriété <#=propName#>.
+        /// </summary>
+        /// <returns>Un booléen indiquant si la propriété est valide.</returns>
+		public bool Val_<#=propName#>()
+		{
+			// TODO : <#=propName#> - Implémenter la logique de validation.
+			// <#=propName#> requis
+			if (Data.<#=propName#> == CommonBase.NullValue<#=GetNullTypeString(propType)#>)
+			{
+				ValidationErrors.Add(new ValidationError("<#=dtoName#>.<#=propName#>", "<FieldName> est requis"));
+				return false;
+			}
+
+			return true;
+		}
+
+<#}#>
+		#endregion
+	}
+
+<#
+    }
+#>
+}
+<#
+    }
+#>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<#+
+	// Insert any template procedures here
+	public enum DbProviderEnum
+	{
+	    ASE,
+		SQL
+	}
+
+	private static string GetProviderString(DbProviderEnum providerEnum)
+	{
+	    switch (providerEnum)
+	    {
+	        case DbProviderEnum.ASE:
+	            return "ASE";
+	        case DbProviderEnum.SQL:
+	            return "SQL";
+	        default:
+	            throw new ArgumentOutOfRangeException("providerEnum");
+	    }
+	}
+
+
+    private static string GetNullTypeString(string type)
+    {
+        switch (type)
+        {
+            case "string":
+                return "String";
+            case "int":
+                return "Int";
+            default:
+                throw new ArgumentOutOfRangeException("type");
+        }
+    }
+	
+
+    private static string GetDbTypeString(string type)
+    {
+        switch (type)
+        {
+            case "string":
+                return "String";
+            case "int":
+                return "Int32";
+            default:
+                throw new ArgumentOutOfRangeException("type");
+        }
+    }
+#>

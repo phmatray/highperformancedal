@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<root>
+  <Table name="School" >
+    <Column 
+      name="Name" 
+      type="string" 
+      summary="Le nom de l'école."/>
+    <Column 
+      name="Address" 
+      type="string" 
+      summary="L'addresse de l'école."/>
+    <Column 
+      name="Zip" 
+      type="int"
+      summary="Le code postal de l'école."/>
+  </Table>
+  <Table name="Bus" >
+    <Column 
+      name="LicensePlate" 
+      type="string" 
+      summary="La plaque d'immatriculation du bus."/>
+    <Column 
+      name="DriverId"
+      type="int"
+      summary="L'identifiant du chauffeur du bus."/>
+  </Table>
+  <Table name="Driver" >
+    <Column 
+      name="Id" 
+      type="int" 
+      summary="L'identifiant du conducteur."/>
+    <Column 
+      name="FirstName" 
+      type="string" 
+      summary="Le prénom du conducteur."/>
+    <Column 
+      name="LastName"
+      type="string"
+      summary="Le nom de famille du chauffeur du bus."/>
+  </Table>
+</root>

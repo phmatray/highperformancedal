@@ -1,0 +1,8 @@
+C:\ws\HighPerformanceDAL\GuiConsole\bin\Debug\GuiConsole.exe.config
+C:\ws\HighPerformanceDAL\GuiConsole\bin\Debug\GuiConsole.exe
+C:\ws\HighPerformanceDAL\GuiConsole\bin\Debug\GuiConsole.pdb
+C:\ws\HighPerformanceDAL\GuiConsole\bin\Debug\Lib.dll
+C:\ws\HighPerformanceDAL\GuiConsole\bin\Debug\Lib.pdb
+C:\ws\HighPerformanceDAL\GuiConsole\obj\Debug\GuiConsole.csprojResolveAssemblyReference.cache
+C:\ws\HighPerformanceDAL\GuiConsole\obj\Debug\GuiConsole.exe
+C:\ws\HighPerformanceDAL\GuiConsole\obj\Debug\GuiConsole.pdb

@@ -1,0 +1,111 @@
+﻿<#@ template language="C#" debug="false" hostSpecific="true" #>
+<#@ include file="EF.Utility.CS.ttinclude" #>
+<#@ output extension=".txt" #>
+<#@ Assembly Name="System" #>
+<#@ Assembly Name="System.Data.Linq" #>
+<#@ import namespace="System.Data.Linq.Mapping" #>
+<#@ import namespace="System.Collections.Generic" #>
+/*****************************************************/
+/************* CREATION DES DTOS *********************/
+/*****************************************************/
+
+README - Génération des DTO
+
+Auteur : Philippe MATRAY
+Email  : phmatray@gmail.com 
+
+<#
+    var fileManager = EntityFrameworkTemplateFileManager.Create(this);
+	fileManager.StartHeader();
+
+	// Define the namespace.
+    const string fileNamespace = "HighPerformanceDAL";
+
+	// Load the XmlDocument.s
+    var doc = new XmlDocument();
+    doc.Load(Host.ResolvePath("Sample.xml"));
+
+    foreach (XmlElement table in doc.SelectNodes("//Table"))
+    {
+	    var dtoName = table.Attributes["name"].Value;
+        fileManager.StartNewFile(dtoName + ".cs");
+#>
+using System;
+using Lib.Common;
+
+namespace <#=fileNamespace#>.DTO
+{
+    /// <summary>
+    /// Data Transfert Object relatif à <#=dtoName#>
+    /// </summary>
+	public class <#=dtoName#>DTO : DTOBase
+    {
+		#region Properties
+
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName    = Column.Attributes["name"].Value;
+	    var propType    = Column.Attributes["type"].Value;
+	    var propSummary = Column.Attributes["summary"].Value;
+#>
+        /// <summary>
+        /// <#=propSummary#>
+        /// </summary>
+		public <#=propType#> <#=propName#> { get; set; }
+
+<#
+	}
+#>
+		#endregion
+
+		#region Construtor
+
+        /// <summary>
+        /// Constructeur : Celui-ci ne prend aucun paramètre.
+        /// Tous les types sont initialisés à leur valeur null et sont définies dans CommonBase.
+        /// </summary>
+        public <#=dtoName#>DTO()
+        {
+<#
+	foreach (XmlElement Column in table.SelectNodes("Column"))
+	{
+	    var propName    = Column.Attributes["name"].Value;
+	    var propType    = Column.Attributes["type"].Value;
+#>
+			<#=propName#> = NullValue<#=GetNullTypeString(propType)#>;
+<#
+	}
+#>
+			IsNew = true;
+		}
+
+		#endregion
+	}
+}
+<#
+	}
+    fileManager.Process();
+#>
+
+<#+
+	// Insert any template procedures here
+	public enum DbProviderEnum
+	{
+	    ASE,
+		SQL
+	}
+
+    private static string GetNullTypeString(string type)
+    {
+        switch (type)
+        {
+            case "string":
+                return "String";
+            case "int":
+                return "Int";
+            default:
+                throw new ArgumentOutOfRangeException("type");
+        }
+    }
+#>
